@@ -1,0 +1,213 @@
+<?php
+
+/**
+ * @file
+ * A module that piggybacks the pig latin demo to modify it's output
+ * it's form and the datastream tables output.
+ */
+
+
+/**
+ * Implements hook_menu().
+ *
+ * See https://api.drupal.org/api/drupal/modules!system!system.api.php/function/hook_menu/7
+ */
+function islandora_piggyback_menu() {
+  $items = array();
+  $items['islandora/object/%islandora_object/piggyback'] = array(
+    'weight' => -3,
+    'title' => 'PiggyBack View',
+    'page callback' => 'islandora_piggyback_display',
+    'page arguments' => array(2),
+    'type' => MENU_LOCAL_TASK,
+    'access callback' => 'islandora_piggyback_access',
+    'access arguments' => array(2),
+  );
+  return $items;
+}
+
+/**
+ * Determines whether or not to show this modules piggyback view tab.
+ *
+ * The tab and it's callback are defined in the islandora_piggyback_menu
+ *
+ * We check it's cmodel here so that we do not try to display this tab for all
+ * objects.  We could also call other functions from here to help us determine
+ * if we are allowed to show the tab
+ *
+ * @param IslandoraObject $islandora_object
+ *   An Islandora object
+ *
+ * @return bool
+ *   TRUE if we are allowed to show the tab for the corresponding object
+ */
+function islandora_piggyback_access($islandora_object) {
+  if (!isset($islandora_object)) {
+    return FALSE;
+  }
+  $models = $islandora_object->models;
+  if (array_intersect(array('islandora:porcusCModel'), $models)) {
+    return TRUE;
+  }
+  return FALSE;
+}
+
+/**
+ * This is the callback function defined in the menu array of this module.
+ *
+ * This function will be called if our islandora_piggyback_access check returns true
+ * we call another theme function here which also invokes the desired preprocessor
+ *
+ * @param IslandoraObject $islandora_object
+ *   an islandora object
+ *
+ * @return string
+ *   the rendered output
+ */
+function islandora_piggyback_display($islandora_object) {
+  $output = theme('islandora_piggyback_tab',
+    array('islandora_object' => $islandora_object));
+  return $output;
+}
+
+/**
+ * Implements hook_preprocess_theme().
+ *
+ * We have implemented several preprocessors in this module this one is
+ * for the tabbed view
+ *
+ * This is a Drupal hook, not supplied by islandora.
+ *
+ */
+function islandora_piggyback_preprocess_islandora_piggyback_tab(array &$variables) {
+  $islandora_object = $variables['islandora_object'];
+  $content = $islandora_object['OBJ']->content;
+  $variables['piggyback_content_tab'] = str_ireplace('a', 'eh', $content);
+}
+
+/**
+ * Implements hook_theme().
+ *
+ *
+ */
+function islandora_piggyback_theme($existing, $type, $theme, $path) {
+  return array(
+    'islandora_piggyback' => array(
+      'template' => 'theme/islandora-piggyback',
+      'pattern' => 'islandora_piggyback__',
+      'variables' => array('islandora_object' => NULL),
+    ),
+    'islandora_piggyback_tab' => array(
+      'template' => 'theme/islandora-piggyback-tab',
+      'variables' => array('islandora_object' => NULL),
+    ),
+  );
+}
+
+/**
+ * Implements hook_preprocess_theme().
+ *
+ * This is a Drupal hook, not supplied by islandora.
+ * Variables required for display are assembled here and passed to the template file
+ * defined in the theme function.
+ */
+function islandora_piggyback_preprocess_islandora_piggyback(array &$variables) {
+  $islandora_object = $variables['islandora_object'];
+  $reverse_content = strrev($islandora_object['PORCUS']->content);
+  $variables['piggyback_content'] = $reverse_content;
+
+  // We can add js and css here instead of the template if desired.
+  $path = drupal_get_path('module', 'islandora_piggyback');
+  drupal_add_css("$path/css/islandora_piggyback.css");
+  drupal_add_js("$path/js/islandora_piggyback.js");
+}
+
+/**
+ * Implements hook_CMODEL_PID_islandora_view_object().
+ *
+ * this function will be called everytime islandora loads an object with a
+ * cmodel of islandora:porcusCModel.  This function is calling the
+ * theme islandora_piggyback which also invokes the islandora_piggyback_preprocessor
+ */
+function islandora_piggyback_islandora_porcusCModel_islandora_view_object($object, $page_number, $page_size) {
+  $output = theme('islandora_piggyback', array('islandora_object' => $object));
+  return array('test' => $output);
+}
+
+/**
+ * Implements hook_CMODEL_PID_islandora_object_ingested().
+ *
+ * An example hook implementation.  We are just printing a message to the screen
+ * whenever a islandora:porcusCModle object is ingested.
+ */
+function islandora_piggyback_islandora_porcusCModel_islandora_object_ingested($object) {
+  drupal_set_message(t('this is the piggyback module telling you that another
+   porcus object has been ingested, id = %id', array('%id' => $object->id)));
+}
+
+/**
+ * Preprocess the edit template add a dummy column.
+ *
+ * This adds a column to the datastream display and modifies some datastream
+ * labels
+ *
+ * @param array $variables
+ *   theme variables for the edit template
+ */
+function islandora_piggyback_preprocess_islandora_default_edit(&$variables) {
+  $islandora_object = $variables['islandora_object'];
+  $models = $islandora_object->models;
+  // We only want to modify the table for porcus objects
+  if (!array_intersect(array('islandora:porcusCModel'), $models)) {
+    return;
+  }
+  module_load_include('inc', 'islandora', 'includes/datastream');
+  module_load_include('inc', 'islandora', 'includes/utilities');
+  $table = & $variables['datastream_table'];
+  $rows = & $table['rows'];
+  $count = 0;
+  foreach ($rows as &$row) {
+    foreach ($row as &$column) {
+      foreach ($islandora_object as $ds) {
+        if ($column['class'] == 'datastream-label' && $column['data'] == $ds->label) {
+          $column['data'] = str_ireplace('a', 'eh', $column['data']);
+          $rt_value = "";
+          if ($ds->controlGroup == 'M') {
+            $rt_value = $count++ . ' piggly wigglies';
+          }
+        }
+      }
+    }
+    $piggy_column = array('class' => 'piggyback-data', 'data' => $rt_value);
+    array_unshift($row, $piggy_column);
+  }
+  $headers = & $table['header'];
+  $piggyback_header = array('data' => t('PiggyBack'));
+  array_unshift($headers, $piggyback_header);
+}
+
+/**
+ * Implementation of hook_form_alter.
+ *
+ * @param array $form
+ *   the form array
+ * @param array $form_state
+ *   the form_state array
+ * @param string $form_id
+ *   the form_id we only want to modify the islandora_porcus_admin form
+ */
+function islandora_piggyback_form_alter(&$form, &$form_state, $form_id) {
+  if ($form_id != 'islandora_porcus_admin') {
+    return;
+  }
+  $updated_description = str_ireplace('a', 'eh',
+    $form['islandora_porcus_wordlength']['#description']);
+  $form['islandora_porcus_wordlength']['#description'] = $updated_description;
+  array_unshift($form['#submit'], 'islandora_piggyback_admin_submit');
+}
+
+function islandora_piggyback_admin_submit(&$form, &$form_state){
+  drupal_set_message(t('the piggyback module has injected a handler for the
+   islandora_porcus module, I could have modified your data.'));
+}
+

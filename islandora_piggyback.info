@@ -1,0 +1,6 @@
+name = "Islandora Piggy Back"
+description = "An extension to the islandora_porcus module"
+dependencies[] = islandora_porcus
+package = Islandora
+core = 7.x
+version = 7.x-dev

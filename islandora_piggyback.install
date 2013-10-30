@@ -1,0 +1,23 @@
+<?php
+
+/**
+ * @file
+ *
+ * Installs the required objects for piggy back module.
+ */
+
+/**
+ * Implements hook_install().
+ *
+ * @see islandora_islandora_required_objects()
+ */
+function islandora_piggyback_install() {
+  // nothing to do here
+}
+
+/**
+ * Implementation of hook_uninstall.
+ */
+function islandora_piggyback_uninstall() {
+     // nothing to do here
+}

@@ -1,0 +1,9 @@
+.islandora-piggyback-content {
+    color: gold;
+    font-size: larger;
+}
+
+.islandora-piggyback-content-wrapper {
+    display: block;
+    clear: both;
+}
