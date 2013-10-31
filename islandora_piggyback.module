@@ -14,6 +14,7 @@
  */
 function islandora_piggyback_menu() {
   $items = array();
+  // Entry point for our new tab.
   $items['islandora/object/%islandora_object/piggyback'] = array(
     'weight' => -3,
     'title' => 'PiggyBack View',
@@ -74,10 +75,9 @@ function islandora_piggyback_display($islandora_object) {
  * Implements hook_preprocess_theme().
  *
  * We have implemented several preprocessors in this module this one is
- * for the tabbed view
+ * for the piggyback tabbed view
  *
  * This is a Drupal hook, not supplied by islandora.
- *
  */
 function islandora_piggyback_preprocess_islandora_piggyback_tab(array &$variables) {
   $islandora_object = $variables['islandora_object'];
@@ -88,15 +88,16 @@ function islandora_piggyback_preprocess_islandora_piggyback_tab(array &$variable
 /**
  * Implements hook_theme().
  *
- *
  */
 function islandora_piggyback_theme($existing, $type, $theme, $path) {
   return array(
+    // Themes the output on the main view tab.
     'islandora_piggyback' => array(
       'template' => 'theme/islandora-piggyback',
       'pattern' => 'islandora_piggyback__',
       'variables' => array('islandora_object' => NULL),
     ),
+    // Themes the output of the piggyback tab.
     'islandora_piggyback_tab' => array(
       'template' => 'theme/islandora-piggyback-tab',
       'variables' => array('islandora_object' => NULL),
@@ -126,8 +127,11 @@ function islandora_piggyback_preprocess_islandora_piggyback(array &$variables) {
  * Implements hook_CMODEL_PID_islandora_view_object().
  *
  * this function will be called everytime islandora loads an object with a
- * cmodel of islandora:porcusCModel.  This function is calling the
- * theme islandora_piggyback which also invokes the islandora_piggyback_preprocessor
+ * cmodel of islandora:porcusCModel.
+ *
+ * This function is calling the theme function to
+ * theme islandora_piggyback which also invokes
+ * the islandora_piggyback_preprocessor
  */
 function islandora_piggyback_islandora_porcusCModel_islandora_view_object($object, $page_number, $page_size) {
   $output = theme('islandora_piggyback', array('islandora_object' => $object));
@@ -138,11 +142,20 @@ function islandora_piggyback_islandora_porcusCModel_islandora_view_object($objec
  * Implements hook_CMODEL_PID_islandora_object_ingested().
  *
  * An example hook implementation.  We are just printing a message to the screen
- * whenever a islandora:porcusCModle object is ingested.
+ * whenever a islandora:porcusCModle object is ingested.  We also add a useless
+ * datastream with an id of PIGGYBACK
  */
 function islandora_piggyback_islandora_porcusCModel_islandora_object_ingested($object) {
   drupal_set_message(t('this is the piggyback module telling you that another
    porcus object has been ingested, id = %id', array('%id' => $object->id)));
+  // Add a managed datastream to the ingested object.
+  $ds = $object->constructDatastream('PIGGYBACK', "M");
+  $ds->label = 'PIGGYBACK';
+  $ds->mimetype = 'text/plain';
+  $ds->setContentFromString("PIGGY BACK TEXT");
+  $object->ingestDatastream($ds);
+  // Add a new relationship, using a literal here.
+  $object->relationships->add(ISLANDORA_RELS_EXT_URI, 'isPiggyBack', 'YES', TRUE);
 }
 
 /**
@@ -157,12 +170,10 @@ function islandora_piggyback_islandora_porcusCModel_islandora_object_ingested($o
 function islandora_piggyback_preprocess_islandora_default_edit(&$variables) {
   $islandora_object = $variables['islandora_object'];
   $models = $islandora_object->models;
-  // We only want to modify the table for porcus objects
+  // We only want to modify the table for porcus objects.
   if (!array_intersect(array('islandora:porcusCModel'), $models)) {
     return;
   }
-  module_load_include('inc', 'islandora', 'includes/datastream');
-  module_load_include('inc', 'islandora', 'includes/utilities');
   $table = & $variables['datastream_table'];
   $rows = & $table['rows'];
   $count = 0;
@@ -189,6 +200,12 @@ function islandora_piggyback_preprocess_islandora_default_edit(&$variables) {
 /**
  * Implementation of hook_form_alter.
  *
+ * We alter the islandora_porcus admin form by changing the description
+ * and modifying the wordlength.
+ *
+ * We also add another submit handler.  If we added new elements to the form
+ * we need a handler that is aware of them.
+ *
  * @param array $form
  *   the form array
  * @param array $form_state
@@ -200,14 +217,36 @@ function islandora_piggyback_form_alter(&$form, &$form_state, $form_id) {
   if ($form_id != 'islandora_porcus_admin') {
     return;
   }
+  // Update the form elements description.
   $updated_description = str_ireplace('a', 'eh',
     $form['islandora_porcus_wordlength']['#description']);
   $form['islandora_porcus_wordlength']['#description'] = $updated_description;
+  // Add another submit handler
+  // Ours will be executed first as we added it to the front of the array.
   array_unshift($form['#submit'], 'islandora_piggyback_admin_submit');
+  // Modify the value enter in the word length form elememt.
+  $input_length = empty($form_state['input']['islandora_porcus_wordlength']) ?
+    NULL : $form_state['input']['islandora_porcus_wordlength'];
+  if ($input_length) {
+    $form['islandora_porcus_wordlength']['#value'] = $input_length + 2;
+  }
 }
 
-function islandora_piggyback_admin_submit(&$form, &$form_state){
+/**
+ * Our handler for the islandor_porcus admin form.
+ *
+ * We just modify the wordlength here.
+ *
+ * @param array $form
+ *   the form array
+ * @param array $form_state
+ *   the form_state array
+ */
+function islandora_piggyback_admin_submit(&$form, &$form_state) {
+  // Print a message with the word length value before we modify it again.
   drupal_set_message(t('the piggyback module has injected a handler for the
-   islandora_porcus module, I could have modified your data.'));
+   islandora_porcus module, We received a value of %val but we are going to subtract 1.', array('%val' => $form_state['values']['islandora_porcus_wordlength'])));
+  // Modify the word length again.
+  $form_state['values']['islandora_porcus_wordlength'] = $form_state['values']['islandora_porcus_wordlength'] - 1;
 }
 
