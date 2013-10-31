@@ -11,6 +11,8 @@ ingested by the pig latin module with all the a's replaced with eh.
 * it will modify the datastreams output of the manage tab in several useless ways
 * also the islandora porcus admin form will be altered and a new submit handler will
 be added to the form.
+* if the piggyback module is enabled it will also add a datastream and a
+relationship to an object when ingested using the porcus module.
 
 This module is designed to be deliberately trivial and useless.
 It exists only as demo to illustrate how Islandora ingests and displays
