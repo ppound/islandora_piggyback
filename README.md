@@ -14,6 +14,9 @@ be added to the form.
 * if the piggyback module is enabled it will also add a datastream and a
 relationship to an object when ingested using the porcus module.
 
+We have also added a islandora_solr primary display to this module by implementing
+the required hooks.  All it does is reverse the text of the labels.
+
 This module is designed to be deliberately trivial and useless.
 It exists only as demo to illustrate how Islandora ingests and displays
 digital assets and how modules can be used to alter output.
