@@ -43,12 +43,12 @@ class PiggyBackSolrPrimaryResults extends IslandoraSolrResults {
 /**
  * Extention of IslandoraSolrResults to create an alternative display type.
  */
-class IslandoraSolrResultsCSV extends IslandoraSolrResults {
+class PiggybackSolrSecondaryResults extends IslandoraSolrResults {
 
   /**
-   * Renders the Solr results as a comma separated values file (.csv).
+   * Renders the Solr results as a semicolon separated values file (.csv).
    *
-   * Renders the Solr results as a comma separated values file (.csv). Resets
+   * Renders the Solr results as a semicolon separated values file (.csv). Resets
    * the html headers so it'll prompt to be downloaded.
    *
    * @see IslandoraSolrResults
@@ -59,7 +59,7 @@ class IslandoraSolrResultsCSV extends IslandoraSolrResults {
    *   The IslandoraSolrQueryProcessor object which includes the current query
    *   settings and the raw Solr results.
    */
-  public function printCSV($islandora_solr_query) {
+  public function printPiggybackCSV($islandora_solr_query) {
     global $base_url;
     $result_fields = $this->resultFieldArray;
 
@@ -76,7 +76,7 @@ class IslandoraSolrResultsCSV extends IslandoraSolrResults {
     $field_counts = array();
     $values = array();
 
-    $seperator = ",";
+    $seperator = ";";
     $wrap = '"';
     $replace_value = '""';
 
