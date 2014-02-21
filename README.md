@@ -21,3 +21,6 @@ This module is designed to be deliberately trivial and useless.
 It exists only as demo to illustrate how Islandora ingests and displays
 digital assets and how modules can be used to alter output.
 
+Islandora is evolving all the time so check the Islandora modules islandora.api.php
+for the documentation on the latest hooks that modules can implement.
+
