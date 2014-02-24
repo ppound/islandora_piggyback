@@ -14,6 +14,7 @@ before_install:
   - $HOME/islandora/tests/scripts/travis_setup.sh
   - cd $HOME/drupal-*
   - ln -s $TRAVIS_BUILD_DIR sites/all/modules/islandora_piggyback
+  - drush en --yes islandora_porcus
   - drush en --yes islandora_piggyback
 script:
   - ant -buildfile sites/all/modules/islandora_piggyback/build.xml lint
