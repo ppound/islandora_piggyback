@@ -194,15 +194,27 @@ function islandora_piggyback_islandora_porcusCModel_islandora_view_object($objec
 function islandora_piggyback_islandora_porcusCModel_islandora_object_ingested($object) {
   drupal_set_message(t('this is the piggyback module telling you that another
    porcus object has been ingested, id = %id', array('%id' => $object->id)));
-  // Add a managed datastream to the ingested object.
-  $ds = $object->constructDatastream('PIGGYBACK', "M");
-  $ds->label = 'PIGGYBACK';
-  $ds->mimetype = 'text/plain';
-  $ds->setContentFromString("PIGGY BACK TEXT");
-  $object->ingestDatastream($ds);
   // Add a new relationship, using a literal here.
   $object->relationships->add(ISLANDORA_RELS_EXT_URI, 'isPiggyBack', 'YES', TRUE);
 }
+
+/**
+ * Implements hook_islandora_CMODEL_PID_derivative().
+ */
+function islandora_piggyback_islandora_porcusCModel_islandora_derivative() {
+  return array(
+    array(
+      'source_dsid' => 'OBJ',
+      'destination_dsid' => 'PIGGYBACK',
+      'weight' => '0',
+      'function' => array(
+        'islandora_piggyback_create_piggyback',
+      ),
+      'file' => drupal_get_path('module', 'islandora_piggyback') . '/includes/derivatives.inc',
+    )
+  );
+}
+
 
 /**
  * Preprocess the edit template add a dummy column.
